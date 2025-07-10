@@ -49,14 +49,27 @@ def scrape_and_store():
             # Convert the string date to a Python date object
             submitted_date_obj = datetime.strptime(paper_data['created'], '%Y-%m-%d').date() # <-- MODIFIED THIS LINE
 
+            cats_data = paper_data['categories']
+            # Ensure we are working with a list, not a string
+            if isinstance(cats_data, str):
+                # If it's a string, it might contain multiple space-separated categories
+                # so we split it into a list.
+                cats_list = cats_data.split()
+            else:
+                # If it's already a list, we're good to go.
+                cats_list = cats_data
+            
+            # Now, join the clean list with a comma and a space
+            categories_str = ", ".join(cats_list)
+
             new_paper = Paper(
                 arxiv_id=paper_arxiv_id,
                 title=paper_data['title'].strip(),
                 abstract=paper_data['abstract'].strip(),
                 authors=", ".join(paper_data['authors']),
-                categories=", ".join(paper_data['categories']),
+                categories=categories_str,
                 pdf_url=paper_data['url'],
-                submitted_date=submitted_date_obj # Use the converted date object here
+                submitted_date=submitted_date_obj
             )
             
             db.add(new_paper)
