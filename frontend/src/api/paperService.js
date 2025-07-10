@@ -43,3 +43,18 @@ export const getPapers = async (params) => {
     throw error;
   }
 };
+
+/**
+ * Triggers an on-demand scrape
+ * @param {object} scrapeData - The data for the scrape request (e.g., { categories: [...], start_date: '...', end_date: '...' })
+ * @returns {Promise<Array>} - A promise that resolves to an array of the newly scraped paper objects
+ */
+export const triggerScrape = async (scrapeData) => {
+  try {
+    const response = await apiClient.post('/scrape/', scrapeData);
+    return response.data;
+  } catch (error) {
+    console.error('Error triggering scrape:', error);
+    throw error;
+  }
+};

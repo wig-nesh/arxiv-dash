@@ -1,98 +1,71 @@
-// A list of common categories to show as filter options
+import { useState, useEffect } from 'react';
+import { loadPreferences, savePreferences } from '../utils/userPreferences';
+
+// Re-using the category list from our old filter bar
 const AVAILABLE_CATEGORIES = [
-  'cs.AI',  // Artificial Intelligence
-  'cs.LG',  // Machine Learning
-  'cs.CV',  // Computer Vision
-  'cs.CL',  // Computation and Language
-  'cs.RO',  // Robotics
-  'stat.ML' // Machine Learning (Statistics)
+  'cs.AI', 'cs.LG', 'cs.CV', 'cs.CL', 'cs.RO', 'stat.ML'
 ];
 
-const FilterBar = ({ filters, setFilters }) => {
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prevFilters => ({
-      ...prevFilters,
-      [name]: value,
-    }));
-  };
-  
-  const handleLast7Days = () => {
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(endDate.getDate() - 7);
-    
-    setFilters(prevFilters => ({
-        ...prevFilters,
-        start_date: startDate.toISOString().split('T')[0],
-        end_date: endDate.toISOString().split('T')[0],
-    }));
+const Settings = () => {
+  // State to hold the preferences, initialized from local storage
+  const [prefs, setPrefs] = useState(loadPreferences);
+
+  // An effect that saves preferences to local storage whenever they change
+  useEffect(() => {
+    savePreferences(prefs);
+  }, [prefs]);
+
+  const handleKeywordChange = (e) => {
+    setPrefs(p => ({ ...p, keywords: e.target.value }));
   };
 
-  // --- NEW ---
-  // Handler for category button clicks
   const handleCategoryClick = (category) => {
-    setFilters(prevFilters => {
-      const currentCategories = prevFilters.category || [];
-      // Check if the category is already selected
+    setPrefs(p => {
+      const currentCategories = p.categories || [];
       const newCategories = currentCategories.includes(category)
-        // If yes, remove it from the array
         ? currentCategories.filter(c => c !== category)
-        // If no, add it to the array
         : [...currentCategories, category];
-      
-      return { ...prevFilters, category: newCategories };
+      return { ...p, categories: newCategories };
     });
   };
-  // --- END NEW ---
 
   return (
-    <div className="bg-slate-800 p-4 rounded-lg mb-8">
-      {/* Search and Date inputs (no changes here) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="bg-slate-800 p-8 rounded-lg">
+      <h2 className="text-2xl font-bold mb-6">Dashboard Preferences</h2>
+      
+      {/* Keyword Input Section */}
+      <div className="mb-8">
+        <label htmlFor="keywords" className="block text-lg font-medium text-slate-300 mb-2">
+          Default Keywords
+        </label>
+        <p className="text-sm text-slate-400 mb-2">
+          Papers on your dashboard will match these keywords in their title or abstract.
+        </p>
         <input
           type="text"
-          name="search"
-          placeholder="Search title or abstract..."
-          value={filters.search || ''}
-          onChange={handleInputChange}
-          className="w-full bg-slate-700 text-white p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
+          id="keywords"
+          name="keywords"
+          placeholder="e.g., diffusion models, llm, robotics"
+          value={prefs.keywords || ''}
+          onChange={handleKeywordChange}
+          className="w-full max-w-lg bg-slate-700 text-white p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
         />
-        <input
-          type="date"
-          name="start_date"
-          value={filters.start_date || ''}
-          onChange={handleInputChange}
-          className="w-full bg-slate-700 text-white p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
-        />
-        <input
-          type="date"
-          name="end_date"
-          value={filters.end_date || ''}
-          onChange={handleInputChange}
-          className="w-full bg-slate-700 text-white p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
-        />
-        <div className="flex items-center gap-2">
-            <button 
-                onClick={handleLast7Days}
-                className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-2 px-4 rounded-md transition-colors"
-            >
-                Last 7 Days
-            </button>
-        </div>
       </div>
 
-      {/* --- NEW Category Buttons Section --- */}
-      <div className="mt-4 pt-4 border-t border-slate-700">
-        <h4 className="text-sm font-semibold text-slate-400 mb-2">Categories:</h4>
-        <div className="flex flex-wrap gap-2">
+      {/* Category Selection Section */}
+      <div>
+        <h3 className="text-lg font-medium text-slate-300 mb-2">Default Categories</h3>
+        <p className="text-sm text-slate-400 mb-4">
+          Select categories to show on your dashboard.
+        </p>
+        <div className="flex flex-wrap gap-3">
           {AVAILABLE_CATEGORIES.map(cat => {
-            const isSelected = filters.category?.includes(cat);
+            const isSelected = prefs.categories?.includes(cat);
             return (
               <button
                 key={cat}
                 onClick={() => handleCategoryClick(cat)}
-                className={`px-3 py-1 text-sm rounded-full transition-colors font-medium
+                className={`px-4 py-2 text-sm rounded-full transition-colors font-semibold
                   ${isSelected 
                     ? 'bg-cyan-500 text-slate-900' 
                     : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
@@ -104,9 +77,8 @@ const FilterBar = ({ filters, setFilters }) => {
           })}
         </div>
       </div>
-      {/* --- END NEW --- */}
     </div>
   );
 };
 
-export default FilterBar;
+export default Settings;

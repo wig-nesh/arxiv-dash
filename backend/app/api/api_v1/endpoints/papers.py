@@ -17,7 +17,7 @@ def get_db():
     finally:
         db.close()
 
-@router.get("/papers/", response_model=List[paper.Paper])
+@router.get("/papers/", response_model=paper.PaperPage)
 def read_papers(
     db: Session = Depends(get_db),
     skip: int = 0,
@@ -25,13 +25,14 @@ def read_papers(
     search: Optional[str] = None,
     start_date: Optional[date] = Query(None, description="Format: YYYY-MM-DD"),
     end_date: Optional[date] = Query(None, description="Format: YYYY-MM-DD"),
-    # This allows multiple 'category' query params, e.g., ?category=cs.AI&category=cs.LG
     categories: Optional[List[str]] = Query(None, alias="category")
 ):
     """
-    Retrieve papers with advanced filtering.
+    Retrieve a paginated list of papers with advanced filtering.
     """
-    papers = crud_paper.get_papers(
+    # The CRUD function now returns a dictionary, which we return directly.
+    # FastAPI will automatically match it to the PaperPage response_model.
+    papers_data = crud_paper.get_papers(
         db=db, 
         skip=skip, 
         limit=limit, 
@@ -40,4 +41,4 @@ def read_papers(
         end_date=end_date,
         categories=categories
     )
-    return papers
+    return papers_data

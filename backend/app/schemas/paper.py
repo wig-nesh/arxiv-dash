@@ -19,3 +19,10 @@ class Paper(BaseModel):
     # is not a dict, but an ORM model (like our SQLAlchemy Paper model).
     class Config:
         orm_mode = True
+
+
+
+# Create a new schema for the paginated response
+class PaperPage(BaseModel):
+    total_count: int
+    papers: List[Paper]
