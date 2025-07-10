@@ -1,23 +1,29 @@
 import { useState, useEffect } from 'react';
 import { loadPreferences, savePreferences } from '../utils/userPreferences';
 
-// Re-using the category list from our old filter bar
 const AVAILABLE_CATEGORIES = [
   'cs.AI', 'cs.LG', 'cs.CV', 'cs.CL', 'cs.RO', 'stat.ML'
 ];
+const DATE_RANGE_OPTIONS = [
+  { value: 'last_7_days', label: 'Last 7 Days' },
+  { value: 'last_30_days', label: 'Last 30 Days' },
+  { value: 'this_year', label: 'This Year' },
+  { value: 'all_time', label: 'All Time' },
+];
 
 const Settings = () => {
-  // State to hold the preferences, initialized from local storage
   const [prefs, setPrefs] = useState(loadPreferences);
 
-  // An effect that saves preferences to local storage whenever they change
   useEffect(() => {
     savePreferences(prefs);
   }, [prefs]);
 
-  const handleKeywordChange = (e) => {
-    setPrefs(p => ({ ...p, keywords: e.target.value }));
+  // --- FIX: Rename this function to be generic ---
+  const handleInputChange = (e) => {
+    // It dynamically uses the input's 'name' attribute to update the state
+    setPrefs(p => ({ ...p, [e.target.name]: e.target.value }));
   };
+  // --- END FIX ---
 
   const handleCategoryClick = (category) => {
     setPrefs(p => {
@@ -33,7 +39,27 @@ const Settings = () => {
     <div className="bg-slate-800 p-8 rounded-lg">
       <h2 className="text-2xl font-bold mb-6">Dashboard Preferences</h2>
       
-      {/* Keyword Input Section */}
+      <div className="mb-8">
+        <label htmlFor="dateRange" className="block text-lg font-medium text-slate-300 mb-2">
+          Default Date Range
+        </label>
+        <p className="text-sm text-slate-400 mb-2">
+          Your dashboard will default to showing papers from this period.
+        </p>
+        <select
+          name="dateRange"
+          id="dateRange"
+          value={prefs.dateRange}
+          // This now correctly calls the defined function
+          onChange={handleInputChange}
+          className="w-full max-w-lg bg-slate-700 text-white p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
+        >
+          {DATE_RANGE_OPTIONS.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
       <div className="mb-8">
         <label htmlFor="keywords" className="block text-lg font-medium text-slate-300 mb-2">
           Default Keywords
@@ -47,12 +73,12 @@ const Settings = () => {
           name="keywords"
           placeholder="e.g., diffusion models, llm, robotics"
           value={prefs.keywords || ''}
-          onChange={handleKeywordChange}
+          // This also uses the same generic handler now
+          onChange={handleInputChange}
           className="w-full max-w-lg bg-slate-700 text-white p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
         />
       </div>
 
-      {/* Category Selection Section */}
       <div>
         <h3 className="text-lg font-medium text-slate-300 mb-2">Default Categories</h3>
         <p className="text-sm text-slate-400 mb-4">
