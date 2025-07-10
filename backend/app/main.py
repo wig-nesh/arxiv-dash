@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from app.api.api_v1.api import api_router
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
     title="arXiv Dashboard API",
@@ -7,6 +8,19 @@ app = FastAPI(
     version="0.1.0",
 )
 
+# Define the origins that are allowed to make requests
+origins = [
+    "http://localhost:5173", # The default Vite dev server URL
+    "http://127.0.0.1:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"], # Allow all methods (GET, POST, etc.)
+    allow_headers=["*"], # Allow all headers
+)
 
 @app.get("/")
 def read_root():
