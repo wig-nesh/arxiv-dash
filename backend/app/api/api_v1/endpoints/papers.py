@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from datetime import date
 
-from app import crud
+from app.crud import crud_paper
 from app.schemas import paper
 from app.db.session import SessionLocal
 
@@ -21,13 +22,22 @@ def read_papers(
     db: Session = Depends(get_db),
     skip: int = 0,
     limit: int = 10,
-    search: Optional[str] = None
+    search: Optional[str] = None,
+    start_date: Optional[date] = Query(None, description="Format: YYYY-MM-DD"),
+    end_date: Optional[date] = Query(None, description="Format: YYYY-MM-DD"),
+    # This allows multiple 'category' query params, e.g., ?category=cs.AI&category=cs.LG
+    categories: Optional[List[str]] = Query(None, alias="category")
 ):
     """
-    Retrieve papers.
-    - 'skip' for pagination offset.
-    - 'limit' for number of items per page.
-    - 'search' to filter by a keyword in title or abstract.
+    Retrieve papers with advanced filtering.
     """
-    papers = crud.crud_paper.get_papers(db=db, skip=skip, limit=limit, search=search)
+    papers = crud_paper.get_papers(
+        db=db, 
+        skip=skip, 
+        limit=limit, 
+        search=search,
+        start_date=start_date,
+        end_date=end_date,
+        categories=categories
+    )
     return papers
