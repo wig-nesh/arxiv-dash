@@ -27,24 +27,26 @@ def get_papers(
 
     # 1. Filter by search keyword (in title or abstract)
     if search:
-        # Split the search string into individual words
-        search_terms = search.split()
-        
-        # Create a list of filter conditions, one for each word
-        # This will find papers where title OR abstract contains the word
-        search_filters = []
-        for term in search_terms:
-            search_filters.append(
-                or_(
-                    models.Paper.title.ilike(f"%{term}%"),
-                    models.Paper.abstract.ilike(f"%{term}%")
-                )
-            )
-        
-        # Chain all conditions together with AND
-        # This ensures the paper contains ALL the search words
-        query = query.filter(and_(*search_filters))
+        # 1. Split the input string by commas into a list of phrases.
+        #    We also strip whitespace from each phrase and ignore any empty ones.
+        phrases = [p.strip() for p in search.split(',') if p.strip()]
 
+        if phrases:
+            # 2. This list will hold the filter condition for each individual phrase.
+            #    Each condition will be an OR between the title and abstract.
+            phrase_filters = []
+            for phrase in phrases:
+                # Example: find 'dual arm' in title OR abstract
+                single_phrase_filter = or_(
+                    models.Paper.title.ilike(f"%{phrase}%"),
+                    models.Paper.abstract.ilike(f"%{phrase}%")
+                )
+                phrase_filters.append(single_phrase_filter)
+            
+            # 3. Combine all the individual phrase filters with a top-level OR.
+            #    This finds papers matching ANY of the phrases.
+            query = query.filter(or_(*phrase_filters))
+            
     # 2. Filter by date range
     if start_date:
         query = query.filter(models.Paper.submitted_date >= start_date)

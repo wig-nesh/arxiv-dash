@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from app.api.api_v1.api import api_router
+from app.db.session import create_db_and_tables
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
@@ -7,6 +8,16 @@ app = FastAPI(
     description="An API to search and save papers from arXiv.",
     version="0.1.0",
 )
+
+@app.on_event("startup")
+def on_startup():
+    """
+    This function runs when the FastAPI application starts up.
+    It ensures the database and tables are created.
+    """
+    print("Running startup tasks...")
+    create_db_and_tables()
+    print("Startup tasks complete. Database is ready.")
 
 # Define the origins that are allowed to make requests
 origins = [

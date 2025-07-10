@@ -3,8 +3,9 @@ import PaperList from '../components/PaperList';
 import { getPapers } from '../api/paperService';
 import { loadPreferences } from '../utils/userPreferences';
 
-// This new helper function translates the setting string into actual dates
+// This helper function remains the same
 const calculateDateRange = (rangeOption) => {
+  // ... (no changes here)
   const endDate = new Date();
   const startDate = new Date();
   switch (rangeOption) {
@@ -18,7 +19,6 @@ const calculateDateRange = (rangeOption) => {
       startDate.setFullYear(endDate.getFullYear(), 0, 1);
       break;
     case 'all_time':
-      // Return nulls to signify no date filter
       return { start_date: null, end_date: null };
     default:
       startDate.setDate(endDate.getDate() - 7);
@@ -29,32 +29,48 @@ const calculateDateRange = (rangeOption) => {
   };
 };
 
-// Display component to show the user which filters are active
+// --- THIS COMPONENT IS NOW FIXED TO BE MORE ROBUST ---
+const DATE_RANGE_OPTIONS = [ { value: 'last_7_days', label: 'Last 7 Days' }, { value: 'last_30_days', label: 'Last 30 Days' }, { value: 'this_year', label: 'This Year' }, { value: 'all_time', label: 'All Time' }, ];
+
 const CurrentFiltersDisplay = ({ appliedFilters }) => {
   if (!appliedFilters) return null;
-  const hasKeywords = appliedFilters.search;
-  const hasCategories = appliedFilters.category?.length > 0;
-  // Find the label for the current date range
+
+  // It correctly looks for `search` and `category`
+  const hasKeywords = appliedFilters.search && appliedFilters.search.length > 0;
+  const hasCategories = appliedFilters.category && appliedFilters.category.length > 0;
+  
   const dateRangeLabel = DATE_RANGE_OPTIONS.find(o => o.value === appliedFilters.dateRange)?.label || 'Default';
 
   return (
     <div className="mb-4 p-4 bg-slate-800 rounded-lg border border-slate-700 text-sm">
-      <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">
-          <div><span className="text-slate-400">Date Range: </span><span className="font-mono bg-slate-700 px-2 py-1 rounded">{dateRangeLabel}</span></div>
-          {hasKeywords && <div><span className="text-slate-400">Keywords: </span><span className="font-mono bg-slate-700 px-2 py-1 rounded">{appliedFilters.search}</span></div>}
-          {hasCategories && <div><span className="text-slate-400">Categories: </span>{appliedFilters.category.map(c => (<span key={c} className="font-mono bg-slate-700 px-2 py-1 rounded mr-1">{c}</span>))}</div>}
+      <h3 className="text-base font-semibold text-slate-300 mb-2">Current Feed Filters</h3>
+      <div className="flex flex-wrap gap-x-6 gap-y-2 items-center">
+          <div>
+            <span className="text-slate-400">Date Range: </span>
+            <span className="font-mono bg-slate-700 px-2 py-1 rounded">{dateRangeLabel}</span>
+          </div>
+          {hasKeywords && (
+            <div>
+              <span className="text-slate-400">Keywords: </span>
+              <span className="font-mono bg-slate-700 px-2 py-1 rounded">{appliedFilters.search}</span>
+            </div>
+          )}
+          {hasCategories && (
+            <div>
+              <span className="text-slate-400">Categories: </span>
+              {appliedFilters.category.map(c => (
+                <span key={c} className="font-mono bg-slate-700 px-2 py-1 rounded mr-1">{c}</span>
+              ))}
+            </div>
+          )}
       </div>
     </div>
   );
 };
-// Make options available to the display component
-const DATE_RANGE_OPTIONS = [ { value: 'last_7_days', label: 'Last 7 Days' }, { value: 'last_30_days', label: 'Last 30 Days' }, { value: 'this_year', label: 'This Year' }, { value: 'all_time', label: 'All Time' }, ];
 
 
 function Dashboard() {
-  // The only user-interactive state left is for pagination
   const [pagination, setPagination] = useState({ limit: 12, skip: 0 });
-  
   const [papers, setPapers] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -64,10 +80,9 @@ function Dashboard() {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     const userPrefs = loadPreferences();
-    
-    // Use the helper to get dates from the preference string
     const dateFilters = calculateDateRange(userPrefs.dateRange);
 
+    // This is the object sent to the API
     const apiFilters = {
       ...pagination,
       ...dateFilters,
@@ -75,7 +90,16 @@ function Dashboard() {
       category: userPrefs.categories || [],
     };
     
-    setAppliedFiltersForDisplay({ ...userPrefs });
+    // --- THIS IS THE FIX ---
+    // We now construct a separate, clean object for the display component.
+    // It contains all the fields the component needs, with the correct names.
+    const displayFilters = {
+      search: userPrefs.keywords,
+      category: userPrefs.categories,
+      dateRange: userPrefs.dateRange, // This is the string like "last_7_days"
+    };
+    setAppliedFiltersForDisplay(displayFilters);
+    // --- END OF FIX ---
 
     try {
       const data = await getPapers(apiFilters);
@@ -84,9 +108,9 @@ function Dashboard() {
       setError(null);
     } catch (err) { setError('Failed to fetch papers.'); } 
     finally { setIsLoading(false); }
-  }, [pagination]); // Now only depends on pagination state
+  }, [pagination]);
 
-  // These effects are now much cleaner
+  // These effects remain the same
   useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => {
     const handleFocus = () => fetchData();
@@ -100,7 +124,6 @@ function Dashboard() {
 
   return (
     <div>
-      {/* NO MORE FILTER BAR */}
       <h2 className="text-2xl font-bold mb-4">Your Personalized Feed</h2>
       <CurrentFiltersDisplay appliedFilters={appliedFiltersForDisplay} />
       <PaperList
@@ -108,7 +131,6 @@ function Dashboard() {
         isLoading={isLoading}
         error={error}
         totalCount={totalCount}
-        // Pass pagination state instead of the old filters object
         filters={pagination} 
         onPageChange={handlePageChange}
       />

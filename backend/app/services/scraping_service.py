@@ -36,6 +36,9 @@ def run_scrape(db: Session, categories: List[str], start_date: str, end_date: st
     
     newly_added_papers = []
     
+    batch_counter = 0
+    batch_size = 500
+
     for paper_data in output:
         paper_arxiv_id = paper_data['id']
         
@@ -49,12 +52,15 @@ def run_scrape(db: Session, categories: List[str], start_date: str, end_date: st
         cats_data = paper_data['categories']
         cats_list = cats_data.split() if isinstance(cats_data, str) else cats_data
         categories_str = ", ".join(cats_list)
+
+        clean_title = paper_data['title'].strip().replace('\n', ' ')
+        clean_abstract = paper_data['abstract'].strip().replace('\n', ' ')
         
         # Create new Paper object
         new_paper = Paper(
             arxiv_id=paper_arxiv_id,
-            title=paper_data['title'].strip(),
-            abstract=paper_data['abstract'].strip(),
+            title=clean_title.capitalize(),
+            abstract=clean_abstract.capitalize(),
             authors=", ".join(paper_data['authors']),
             categories=categories_str,
             pdf_url=paper_data['url'],
@@ -63,6 +69,16 @@ def run_scrape(db: Session, categories: List[str], start_date: str, end_date: st
         
         db.add(new_paper)
         newly_added_papers.append(new_paper)
+        batch_counter += 1
+
+        if batch_counter >= batch_size:
+            print(f"Committing batch of {batch_counter} papers...")
+            db.commit()
+            batch_counter = 0
+
+    if batch_counter > 0:
+        print(f"Committing final batch of {batch_counter} papers...")
+        db.commit()
 
     # Commit all new papers to the database
     if newly_added_papers:
