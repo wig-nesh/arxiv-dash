@@ -1,74 +1,52 @@
-import { useState, useEffect } from 'react';
-import PaperList from './components/PaperList';
-import FilterBar from './components/FilterBar';
-import { getPapers } from './api/paperService';
+import { Routes, Route, NavLink } from 'react-router-dom';
+import Dashboard from './pages/Dashboard';
+import Settings from './pages/Settings';
+import Scrape from './pages/Scrape';
 
 function App() {
-  const [filters, setFilters] = useState({
-    limit: 10, // Let's use a smaller limit for pagination
-    skip: 0,
-    search: '',
-    start_date: '',
-    end_date: '',
-    category: [], 
-  });
-  
-  // Lifted state from PaperList
-  const [papers, setPapers] = useState([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // The main data fetching effect now lives in App.jsx
-  useEffect(() => {
-    const fetchPapers = async () => {
-      setIsLoading(true);
-      try {
-        const data = await getPapers(filters);
-        setPapers(data.papers);
-        setTotalCount(data.total_count);
-        setError(null);
-      } catch (err) {
-        setError('Failed to fetch papers. Make sure the backend server is running.');
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchPapers();
-  }, [filters]); // Re-runs whenever filters change
-
-  // Handler for changing the page
-  const handlePageChange = (newPage) => {
-    // newPage is 1-based, skip is 0-based
-    const newSkip = (newPage - 1) * filters.limit;
-    setFilters(prevFilters => ({
-      ...prevFilters,
-      skip: newSkip
-    }));
-  };
+  // This function provides dynamic styling for the navigation links.
+  // It's a feature of react-router-dom's NavLink component.
+  const navLinkStyle = ({ isActive }) => 
+    `px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+      isActive 
+      ? 'bg-cyan-500 text-slate-900' 
+      : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+    }`;
 
   return (
-    <div className="bg-slate-900 text-white min-h-screen p-4 sm:p-8">
-      <header className="max-w-5xl mx-auto mb-8">
-        <h1 className="text-3xl sm:text-4xl font-bold text-cyan-400">arXiv Digest</h1>
-        <p className="mt-2 text-slate-300">A personalized dashboard for arXiv papers.</p>
-      </header>
+    // Main container for the entire app
+    <div className="bg-slate-900 text-white min-h-screen">
       
-      <main className="max-w-5xl mx-auto">
-        <FilterBar filters={filters} setFilters={setFilters} />
-        
-        <PaperList
-          papers={papers}
-          isLoading={isLoading}
-          error={error}
-          totalCount={totalCount}
-          filters={filters}
-          onPageChange={handlePageChange}
-        />
+      {/* 
+        This header is sticky, meaning it stays at the top of the screen as you scroll.
+        The backdrop-blur-sm and transparent background give it a modern, glassy look.
+      */}
+      <header className="bg-slate-800/50 backdrop-blur-sm sticky top-0 z-10">
+        <nav className="max-w-5xl mx-auto flex justify-between items-center p-4">
+          <h1 className="text-xl font-bold text-cyan-400">arXiv Digest</h1>
+          
+          {/* Navigation Links */}
+          <div className="flex items-center gap-4">
+            <NavLink to="/" className={navLinkStyle}>Dashboard</NavLink>
+            <NavLink to="/scrape" className={navLinkStyle}>Scrape</NavLink>
+            <NavLink to="/settings" className={navLinkStyle}>Settings</NavLink>
+          </div>
+        </nav>
+      </header>
+
+      {/* 
+        This is the main content area. The router will swap components in here
+        based on the current URL path.
+      */}
+      <main className="max-w-5xl mx-auto p-4 sm:p-8">
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/scrape" element={<Scrape />} />
+        </Routes>
       </main>
     </div>
-  )
+  );
 }
 
 export default App;
